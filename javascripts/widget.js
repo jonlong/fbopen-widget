@@ -1,59 +1,107 @@
-var fbopenWidget = {};
-fbopenWidget.helpers = {};
-fbopenWidget.helpers.preview = function(str) {
-  rtnstr = str.substring(0,255);
-  if (str.length > 255)
-    rtnstr += "..."
-  return rtnstr
-};
-fbopenWidget.helpers.addCommas = function(nStr) {
-  nStr += '';
-  x = nStr.split('.');
-  x1 = x[0];
-  x2 = x.length > 1 ? '.' + x[1] : '';
-  var rgx = /(\d+)(\d{3})/;
-  while (rgx.test(x1)) {
-      x1 = x1.replace(rgx, '$1' + ',' + '$2');
-  }
-  return x1 + x2;
-}
-fbopenWidget.helpers.api_uri = function() { return 'http://api.data.gov/gsa/fbopen/v0/opps'; }
-fbopenWidget.models = {};
+(function() {
 
+  // Namespace
+  var fbopenWidget = fbopenWidget || {};
 
-$(function() {
-  var getFbopen = function() {
-    var serializedData = $('#fbopen-widget-data').val()
-    var $results = $('#fbopen-widget-results');
-    $results.html('<h4>Loading...</h4>')
-    var request = $.ajax({
-      url: 'http://api.data.gov/gsa/fbopen/v0/opps',
-      type: "get",
-      data: serializedData
-    });
-    request.done(function (response, textStatus, jqXHR){
-      $('#fbopen-widget-placeholder').fadeIn();
-      $results.html('<h2>FBOpen</h2>');
-      var num = fbopenWidget.helpers.addCommas(response.numFound);
-      $results.append('<h3>'+num+' Opportunities Found</h3>')
-      for (var i = 0; i < response.docs.length; i++) {
-        var title = response.docs[i].title;
-        var uri = response.docs[i].listing_url;
-        var agency = response.docs[i].agency;
-        var description = "No description available."
-        var posted = response.docs[i].posted_dt;
-        if (response.docs[i].description)
-          description = fbopenWidget.helpers.preview(response.docs[i].description);
-        var html = '<div class="fbopen-opp"><a href="'+uri+'" target="_blank"><h4>'+title+'</h4></a>'
-          html += '<h5>'+agency+'</h5>';
-          html += '<p>'+description+'</p>';
-          html += '</div>';
-
-        $results.append(html)
+  // Utilities
+  fbopenWidget.helpers = {
+    preview: function(str) {
+      var rtnstr = str.substring(0, 255);
+      if (str.length > 255) {
+        rtnstr += "...";
       }
-    });
-  }
+      return rtnstr;
+    },
+    addCommas: function(nStr) {
+      nStr += '';
+      var x = nStr.split('.');
+      var x1 = x[0];
+      var x2 = x.length > 1 ? '.' + x[1] : '';
+      var rgx = /(\d+)(\d{3})/;
+      while (rgx.test(x1)) {
+        x1 = x1.replace(rgx, '$1' + ',' + '$2');
+      }
+      return x1 + x2;
+    },
+    api_uri: 'http://api.data.gov/gsa/fbopen/v0/opps'
+  };
 
-  getFbopen();
+  // Elements
+  var widgetEl = document.getElementById('fbopen-widget-placeholder');
+  var dataEl = document.getElementById('fbopen-widget-data');
+  var resultsEl = document.getElementById('fbopen-widget-results');
 
-});
+  // Variables
+  var serializedData = dataEl.value;
+  var request = new XMLHttpRequest();
+
+  // Functions
+  var buildResultsTemplate = function(data) {
+    var number = fbopenWidget.helpers.addCommas(data.numFound);
+    var resultHTML = [];
+    var i = -1;
+    var initialHTML = [
+      '<h2>FBOpen</h2>',
+      '<h3>',
+      number,
+      ' Opportunities Found</h3>'
+    ];
+
+    for (var key = 0, size = data.docs.length; key < size; key++) {
+      var description = "No description available.";
+
+      if (data.docs[key].description) {
+        description = fbopenWidget.helpers.preview(data.docs[key].description);
+      }
+
+      // Build the template
+      resultHTML[++i] = '<div class="fbopen-opp"><a href="';
+      resultHTML[++i] = data.docs[key].listing_url;
+      resultHTML[++i] = '" target="_blank"><h4>';
+      resultHTML[++i] = data.docs[key].title;
+      resultHTML[++i] = '<h4></a><h5>';
+      resultHTML[++i] = data.docs[key].agency;
+      resultHTML[++i] = '</h5><p>';
+      resultHTML[++i] = description;
+      resultHTML[++i] = '</p><div>';
+    }
+
+    resultsEl.innerHTML = initialHTML.join('') + resultHTML.join('');
+  };
+
+  var initWidget = function() {
+    var requestURI = fbopenWidget.helpers.api_uri + '?' + serializedData;
+
+    // Set loading message
+    resultsEl.innerHTML ='<h4>Loading...</h4>';
+
+    // Open request
+    request.open('GET', requestURI, true);
+
+    // Process request
+    request.onreadystatechange = function() {
+      if (this.readyState === 4) {
+
+        // On Success
+        if (this.status >= 200 && this.status < 400) {
+          var data = JSON.parse(this.responseText);
+
+          // Show the widget
+          widgetEl.style.display = 'block';
+
+          buildResultsTemplate(data);
+
+        } else {
+          // On Error
+          console.log('error', this.status, this.responseText);
+        }
+      }
+    };
+
+    request.send();
+    request = null;
+  };
+
+  initWidget();
+
+})();
