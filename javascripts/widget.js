@@ -23,17 +23,74 @@
       }
       return x1 + x2;
     },
-    api_uri: 'http://api.data.gov/gsa/fbopen/v0/opps'
+    api_uri: 'http://api.data.gov/gsa/fbopen/v0/opps',
+    queryString: {
+
+      /**
+       * query-string
+       * Parse and stringify URL query strings
+       * https://github.com/sindresorhus/query-string
+       * courtesy of Sindre Sorhus
+       * MIT License
+       */
+
+      parse: function(str) {
+        if (typeof str !== 'string') {
+          return {};
+        }
+
+        str = str.trim().replace(/^\?/, '');
+
+        if (!str) {
+          return {};
+        }
+
+        return str.trim().split('&').reduce(function(ret, param) {
+          var parts = param.replace(/\+/g, ' ').split('=');
+          var key = parts[0];
+          var val = parts[1];
+
+          key = decodeURIComponent(key);
+          // missing `=` should be `null`:
+          // http://w3.org/TR/2012/WD-url-20120524/#collect-url-parameters
+          val = val === undefined ? null : decodeURIComponent(val);
+
+          if (!ret.hasOwnProperty(key)) {
+            ret[key] = val;
+          } else if (Array.isArray(ret[key])) {
+            ret[key].push(val);
+          } else {
+            ret[key] = [ret[key], val];
+          }
+
+          return ret;
+        }, {});
+      },
+      stringify: function(obj) {
+        return obj ? Object.keys(obj).map(function(key) {
+          var val = obj[key];
+
+          if (Array.isArray(val)) {
+            return val.map(function(val2) {
+              return encodeURIComponent(key) + '=' + encodeURIComponent(val2);
+            }).join('&');
+          }
+
+          return encodeURIComponent(key) + '=' + encodeURIComponent(val);
+        }).join('&') : '';
+      }
+    }
   };
 
   // Elements
   var widgetEl = document.getElementById('fbopen-widget-placeholder');
   var dataEl = document.getElementById('fbopen-widget-data');
   var resultsEl = document.getElementById('fbopen-widget-results');
+  var formEl = document.getElementById('fbopen-widget-search');
 
   // Variables
-  var serializedData = dataEl.value;
-  var request = new XMLHttpRequest();
+  var serializedData = '?' + dataEl.value;
+  var queryParams = fbopenWidget.helpers.queryString.parse(serializedData);
 
   // Functions
   var buildResultsTemplate = function(data) {
@@ -67,20 +124,22 @@
     }
 
     resultsEl.innerHTML = initialHTML.join('') + resultHTML.join('');
-
-    // Show the widget
-    widgetEl.style.display = 'block';
   };
 
-  var initWidget = function() {
-    var requestURI = fbopenWidget.helpers.api_uri + '?' + serializedData;
+  var getSearchResults = function(query) {
+    if (query) {
+      queryParams.q = query;
+    }
+
+    var serializedParams = fbopenWidget.helpers.queryString.stringify(queryParams);
+    var requestURI = fbopenWidget.helpers.api_uri + '?' + serializedParams;
+    var request = new XMLHttpRequest();
 
     // Set loading message
     resultsEl.innerHTML = '<h4>Loading...</h4>';
 
     // IE8 CORS support
     if (window.XDomainRequest) {
-      // Use Microsoft XDR
       var xdr = new XDomainRequest();
       xdr.open("get", requestURI);
       xdr.onload = function() {
@@ -118,7 +177,52 @@
       };
 
       request.send();
-      request = null;
+    }
+  };
+
+  var initOpenSearch = function() {
+    // Don't send the `open_search_enabled` param with the API request
+    delete queryParams.open_search_enabled;
+
+    // show the form
+    formEl.style.display = 'block';
+
+    // Submit handler for form
+    if (formEl.attachEvent) {
+      // <= IE8 event support
+      formEl.attachEvent("submit", handleSubmit);
+    } else {
+      formEl.addEventListener("submit", handleSubmit);
+    }
+  };
+
+  var handleSubmit = function(e) {
+    var query = document.getElementById('fbopen-widget-search-query').value;
+
+    getSearchResults(query);
+    e.preventDefault();
+  };
+
+  var initWidget = function() {
+    var openSearchEnabled = queryParams.open_search_enabled;
+    var searchQuery = queryParams.q;
+    var apiKey = queryParams.api_key;
+
+    // Hide the form initially
+    formEl.style.display = 'none';
+
+    // Show the widget
+    widgetEl.style.display = 'block';
+
+    if (searchQuery && apiKey) {
+      getSearchResults();
+    } else if (apiKey) {
+      // If there's no pre-specified data, show the search box
+      openSearchEnabled = true;
+    }
+
+    if (openSearchEnabled) {
+      initOpenSearch();
     }
 
   };

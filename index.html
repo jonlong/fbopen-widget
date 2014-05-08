@@ -46,9 +46,16 @@
               </div>
 
               <div class="form-group">
-                <!-- <span class="hint">Leave empty</span> -->
-                <input type="text" id="q" name="q" class="form-control intro" placeholder="Start searching">
+                <label>Custom Search Term</a>:
+                  <input type="text" id="q" name="q" class="form-control intro" placeholder="Start searching">
+                </label>
                 <button type="submit" id="q-search"><span class="glyphicon glyphicon-search"></span></button>
+              </div>
+              <div class="checkbox">
+                <label>
+                  <input type="checkbox" name="open_search" value="open_search" />
+                  Enable Search In Widget
+                </label>
               </div>
               <br clear="all" />
 
@@ -64,9 +71,15 @@
 
 <!-- BEGINNING OF WIDGET SNIPPET -->
 <div id="fbopen-widget-placeholder" class="fbopen-widget-wrapper">
-   <input type="hidden" id="fbopen-widget-data" value="" />
-   <div id="fbopen-widget-output">
-  </div>
+  <input type="hidden" id="fbopen-widget-data" value="" />
+  <form id="fbopen-widget-search" method="GET" action="">
+    <div class="form-group">
+      <label>Search</a>:
+        <input type="text" id="q" name="q" class="form-control intro" placeholder="Start searching">
+      </label>
+      <button type="submit" id="fbopen-widget-search-submit">Search</button>
+    </div>
+  </form>
   <div id="fbopen-widget-results"></div>
   <script type="text/javascript" class="embed">
     (function() {
