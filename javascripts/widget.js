@@ -67,39 +67,60 @@
     }
 
     resultsEl.innerHTML = initialHTML.join('') + resultHTML.join('');
+
+    // Show the widget
+    widgetEl.style.display = 'block';
   };
 
   var initWidget = function() {
     var requestURI = fbopenWidget.helpers.api_uri + '?' + serializedData;
 
     // Set loading message
-    resultsEl.innerHTML ='<h4>Loading...</h4>';
+    resultsEl.innerHTML = '<h4>Loading...</h4>';
 
-    // Open request
-    request.open('GET', requestURI, true);
+    // IE8 CORS support
+    if (window.XDomainRequest) {
+      // Use Microsoft XDR
+      var xdr = new XDomainRequest();
+      xdr.open("get", requestURI);
+      xdr.onload = function() {
+        var data = JSON.parse(xdr.responseText);
 
-    // Process request
-    request.onreadystatechange = function() {
-      if (this.readyState === 4) {
-
-        // On Success
-        if (this.status >= 200 && this.status < 400) {
-          var data = JSON.parse(this.responseText);
-
-          // Show the widget
-          widgetEl.style.display = 'block';
-
-          buildResultsTemplate(data);
-
-        } else {
-          // On Error
-          console.log('error', this.status, this.responseText);
+        if (data === null || typeof(data) === 'undefined') {
+          data = JSON.parse(data.firstChild.textContent);
         }
-      }
-    };
 
-    request.send();
-    request = null;
+        buildResultsTemplate(data);
+      };
+
+      xdr.send();
+
+    } else {
+
+      // Standard CORS support
+      request.open('GET', requestURI, true);
+
+      // Process request
+      request.onreadystatechange = function() {
+        if (this.readyState === 4) {
+
+          // On Success
+          if (this.status >= 200 && this.status < 400) {
+            var data = JSON.parse(this.responseText);
+
+            buildResultsTemplate(data);
+
+          } else {
+            // On Error
+            console.log('error', this.status, this.responseText);
+          }
+        }
+      };
+
+      request.send();
+      request = null;
+    }
+
   };
 
   initWidget();
