@@ -69,9 +69,11 @@
   </div>
   <div id="fbopen-widget-results"></div>
   <script type="text/javascript" class="embed">
-    var root_uri = (("localhost" == document.location.hostname) ? "localhost:4000" : "18f.github.io");
-    document.write(unescape("%3Cscript src='//"+root_uri+"/fbopen-widget/javascripts/widget.js' type='text/javascript'%3E%3C/script%3E"));
-    document.write(unescape("%3Clink href='//"+root_uri+"/fbopen-widget/stylesheets/theme_default.css' rel='stylesheet' type='text/css' /%3E"));
+    (function() {
+      var root_uri = (("localhost" == document.location.hostname) ? "localhost:4000" : "18f.github.io");
+      document.write(unescape("%3Cscript src='//"+root_uri+"/fbopen-widget/javascripts/widget.js' type='text/javascript'%3E%3C/script%3E"));
+      document.write(unescape("%3Clink href='//"+root_uri+"/fbopen-widget/stylesheets/theme_default.css' rel='stylesheet' type='text/css' /%3E"));
+    })()
   </script>
 </div>
 <!-- END OF WIDGET SNIPPET -->
