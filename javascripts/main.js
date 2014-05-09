@@ -1,88 +1,51 @@
+/* global fbopenWidget */
+
 $(function() {
-	var FBOPEN_URI = 'http://api.data.gov/gsa/fbopen/v0/opps';
-	var request;
+  var $form = $('#fbopen-widget-demo');
+  var $inputs = $form.find("input, select, button, textarea");
+  var $dataStore = $('#fbopen-widget-data');
+  var $widgetCode = $('#widget-code');
+  var $widget = $('#fbopen-widget-placeholder');
+  var $searchText = $('#fbopen-widget-results-demo small');
 
-  $('#fbopen-widget-demo').submit(function(e) {
-  	if (request) request.abort();
+  $form.submit(function(e) {
+    var serializedData = $form.serialize();
+    var widgetHTML = $widget[0].outerHTML;
 
-  	var $form = $(this);
-  	var $inputs = $form.find("input, select, button, textarea");
-  	var $results = $('#fbopen-widget-results-demo');
-    var $dataStore = $('#fbopen-widget-data');
-    var $widget = $('#widget');
-    var _q = $form.find('#q').val();
-  	var serializedData = $form.serialize();
     // set values for widget snippet
     $dataStore.val(serializedData);
 
-  	$inputs.prop("disabled", true);
-    $results.html('<h4>Loading...</h4>');
-    $widget.fadeIn();
+    $inputs.prop("disabled", true);
 
-    $('#fbopen-widget-output').find('script').each(function() {
-      if ($(this).attr('class') == 'embed') {
-      } else {
-        $(this).remove();
-      }
-    });
-    $('#fbopen-widget-output').find('link').each(function() {
-      $(this).remove();
-    });
-    elm = document.getElementById('fbopen-widget-placeholder');
-    $widget_html = elm.outerHTML;
-    $('#widget-textarea').val($widget_html)
+    $('#widget-textarea').val(widgetHTML);
 
+    if (fbopenWidget) {
+      var options = fbopenWidget.helpers.queryString.parse(serializedData);
 
-  	request = $.ajax({
-  		url: FBOPEN_URI,
-  		type: "get",
-  		data: serializedData
-  	});
+      fbopenWidget.initWidget(options, function(err) {
+        if (err) {
+          console.error(err);
+        }
 
-  	request.done(function (response, textStatus, jqXHR){
-      $results.html('<h2>FBOpen</h2>');
-      var num = addCommas(response.numFound);
-      var _title = "";
-      if (_q.length > 0) {
-        _title = "<h3>" + num + " opportunities found matching <i>" + _q + "<i></h3>";
-      } else {
-        _title = '<h3>' + num + ' opportunities found</h3>';
-      }
-      $results.append(_title);
-      for (var i = 0; i < response.docs.length; i++) {
-        var title = response.docs[i].title;
-        var uri = response.docs[i].listing_url;
-        var agency = response.docs[i].agency;
-        var description = "No description available."
-        var posted = response.docs[i].posted_dt;
-        if (response.docs[i].description)
-          description = preview(response.docs[i].description);
-        var html = '<div class="fbopen-opp"><a href="'+uri+'" target="_blank"><h4>'+title+'</h4></a>'
-          html += '<h5>'+agency+'</h5>';
-          html += '<p>'+description+'</p>';
-          html += '</div>';
+        $inputs.prop("disabled", false);
 
-        $results.append(html);
-      }
-    });
+        if (!$widgetCode.is(':visible')) {
+          $widgetCode.fadeIn();
+        }
 
-    request.fail(function (jqXHR, textStatus, errorThrown){
-      console.error(
-        "The following error occured: "+
-        textStatus, errorThrown
-      );
-    });
-
-    request.always(function () {
-      $inputs.prop("disabled", false);
-    });
+        if (!$widget.is(':visible')) {
+          $searchText.hide();
+          $widget.fadeIn();
+        }
+      });
+    }
 
     e.preventDefault();
   });
 
   $('#widget-textarea').mouseenter(function() {
     ctrlA($(this));
-  })
+  });
 
 });
 
@@ -90,49 +53,30 @@ $(function() {
 // HTML to JavaScript converter
 // By John Krutsch (http://asp.xcentrixlc.com/john)
 // Moderator of the JavaScript Kit Help Forum: http://freewarejava.com/cgi-bin/Ultimate.cgi
-function scriptIt(val){
-  val.value=val.value.replace(/"/gi,"&#34;")
-  val.value=val.value.replace(/'/gi,"&#39;")
-  valArr=escape(val.value).split("%0D%0A")
-  val.value=""
-  for (i=0; i<valArr.length; i++){
-    val.value+= (i==0) ? "<script>\ninfo=" : ""
-    val.value+= "\"" + unescape(valArr[i])
-    val.value+= (i!=valArr.length-1) ? "\" + \n" : "\"\n" 
+
+function scriptIt(val) {
+  val.value = val.value.replace(/"/gi, "&#34;")
+  val.value = val.value.replace(/'/gi, "&#39;")
+  valArr = escape(val.value).split("%0D%0A")
+  val.value = ""
+  for (i = 0; i < valArr.length; i++) {
+    val.value += (i == 0) ? "<script>\ninfo=" : ""
+    val.value += "\"" + unescape(valArr[i])
+    val.value += (i != valArr.length - 1) ? "\" + \n" : "\"\n" 
   }
   // val.value+="\ndocument.write(info)\n<\/script>"
-  val.value+="\nconsole.log(info)\n<\/script>"
+  val.value += "\nconsole.log(info)\n<\/script>"
 }
 
 function ctrlA(el) {
-  with(el){
-  focus(); select() 
+  with(el) {
+    focus();
+    select() 
   }
-  if(document.all){
-  txt=el.createTextRange()
-  txt.execCommand("Copy") 
-  window.status='Selected and copied to clipboard!'
-  }
-  else window.status='Press ctrl-c to copy the text to the clipboard'
-  setTimeout("window.status=''",3000)
-} 
-
-function addCommas(nStr) {
-  nStr += '';
-  x = nStr.split('.');
-  x1 = x[0];
-  x2 = x.length > 1 ? '.' + x[1] : '';
-  var rgx = /(\d+)(\d{3})/;
-  while (rgx.test(x1)) {
-      x1 = x1.replace(rgx, '$1' + ',' + '$2');
-  }
-  return x1 + x2;
+  if (document.all) {
+    txt = el.createTextRange()
+    txt.execCommand("Copy") 
+    window.status = 'Selected and copied to clipboard!'
+  } else window.status = 'Press ctrl-c to copy the text to the clipboard'
+  setTimeout("window.status=''", 3000)
 }
-function preview(str) {
-  rtnstr = str.substring(0,255);
-  if (str.length > 255)
-    rtnstr += "..."
-  return rtnstr
-}
-
-

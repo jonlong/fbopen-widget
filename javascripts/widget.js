@@ -1,7 +1,9 @@
+/* global fbopenWidget, XDomainRequest */
+
 (function() {
 
-  // Namespace
-  var fbopenWidget = fbopenWidget || {};
+  // Global Namespace
+  fbopenWidget = window.fbopenWidget || {};
 
   // Utilities
   fbopenWidget.helpers = {
@@ -82,17 +84,62 @@
     }
   };
 
+  // Allow global initialization of widget
+  fbopenWidget.initWidget = function(options, callback) {
+
+    // If only one argument is supplied, assign it correctly
+    if (arguments.length === 1) {
+      // If it's a function, it's the callback
+      if (Object.prototype.toString.call(arguments[0]) === "[object Function]") {
+        callback = arguments[0];
+      } else {
+        // Otherwise, it's the options object
+        options = arguments[0];
+      }
+    }
+
+    // If options are specified, inherit from queryParams and overwrite duplicates
+    if (options) {
+      queryParams = mergeObjects(queryParams, options);
+    }
+
+    var openSearchEnabled = queryParams.open_search_enabled;
+    var searchQuery = queryParams.q;
+    var apiKey = queryParams.api_key;
+
+    // Hide the form initially
+    formEl.style.display = 'none';
+
+    // If a search query is pre-specified, execute it
+    if (searchQuery && apiKey) {
+      getSearchResults(callback);
+    } else if (apiKey) {
+      // If there's no pre-specified data, show the search box
+      openSearchEnabled = true;
+
+      if (callback instanceof Function) {
+        callback(null);
+      }
+    } else {
+      console.error('Please include an API Key');
+    }
+
+    if (openSearchEnabled) {
+      initOpenSearch();
+    }
+  };
+
   // Elements
   var widgetEl = document.getElementById('fbopen-widget-placeholder');
   var dataEl = document.getElementById('fbopen-widget-data');
-  var resultsEl = document.getElementById('fbopen-widget-results');
+  var entriesEl = document.getElementById('fbopen-widget-entries');
   var formEl = document.getElementById('fbopen-widget-search');
 
   // Variables
   var serializedData = '?' + dataEl.value;
   var queryParams = fbopenWidget.helpers.queryString.parse(serializedData);
 
-  // Functions
+  // Private Functions
   var buildResultsTemplate = function(data) {
     var number = fbopenWidget.helpers.addCommas(data.numFound);
     var resultHTML = [];
@@ -123,25 +170,24 @@
       resultHTML[++i] = '</p><div>';
     }
 
-    resultsEl.innerHTML = initialHTML.join('') + resultHTML.join('');
+    entriesEl.innerHTML = initialHTML.join('') + resultHTML.join('');
   };
 
-  var getSearchResults = function(query) {
-    if (query) {
-      queryParams.q = query;
-    }
-
+  var getSearchResults = function(callback) {
     var serializedParams = fbopenWidget.helpers.queryString.stringify(queryParams);
     var requestURI = fbopenWidget.helpers.api_uri + '?' + serializedParams;
     var request = new XMLHttpRequest();
+    var err = {};
 
     // Set loading message
-    resultsEl.innerHTML = '<h4>Loading...</h4>';
+    entriesEl.innerHTML = '<h4>Loading...</h4>';
 
     // IE8 CORS support
     if (window.XDomainRequest) {
       var xdr = new XDomainRequest();
+
       xdr.open("get", requestURI);
+
       xdr.onload = function() {
         var data = JSON.parse(xdr.responseText);
 
@@ -150,6 +196,19 @@
         }
 
         buildResultsTemplate(data);
+
+        if (callback instanceof Function) {
+          callback(null);
+        }
+      };
+
+      xdr.onerror = function() {
+        err.status = this.status;
+        err.response = this.responseText;
+
+        if (callback instanceof Function) {
+          callback(null);
+        }
       };
 
       xdr.send();
@@ -169,9 +228,18 @@
 
             buildResultsTemplate(data);
 
+            if (callback instanceof Function) {
+              callback(null);
+            }
           } else {
+
             // On Error
-            console.log('error', this.status, this.responseText);
+            err.status = this.status;
+            err.response = this.responseText;
+
+            if (callback instanceof Function) {
+              callback(null);
+            }
           }
         }
       };
@@ -198,35 +266,26 @@
 
   var handleSubmit = function(e) {
     var query = document.getElementById('fbopen-widget-search-query').value;
+    queryParams.q = query;
 
-    getSearchResults(query);
+    getSearchResults();
     e.preventDefault();
   };
 
-  var initWidget = function() {
-    var openSearchEnabled = queryParams.open_search_enabled;
-    var searchQuery = queryParams.q;
-    var apiKey = queryParams.api_key;
-
-    // Hide the form initially
-    formEl.style.display = 'none';
-
-    // Show the widget
-    widgetEl.style.display = 'block';
-
-    if (searchQuery && apiKey) {
-      getSearchResults();
-    } else if (apiKey) {
-      // If there's no pre-specified data, show the search box
-      openSearchEnabled = true;
+  var mergeObjects = function(obj1, obj2) {
+    for (var p in obj2) {
+      try {
+        if (obj2[p].constructor === Object) {
+          obj1[p] = mergeObjects(obj1[p], obj2[p]);
+        } else {
+          obj1[p] = obj2[p];
+        }
+      } catch (e) {
+        obj1[p] = obj2[p];
+      }
     }
 
-    if (openSearchEnabled) {
-      initOpenSearch();
-    }
-
+    return obj1;
   };
-
-  initWidget();
 
 })();

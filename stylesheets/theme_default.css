@@ -2,7 +2,7 @@
   border: 1px solid #c1c1c1;
   padding: 10px;
   max-height: 400px;
-  overflow-y: scroll;
+  overflow-y: auto;
 }
 
 #fbopen-widget-results small { color: #c1c1c1; }
@@ -11,9 +11,13 @@
   border: 1px solid #EA461F;
   border-radius: 20px;
   padding: 10px 20px;
-  max-height: 400px;
-  overflow-y: scroll;
 }
+
+#fbopen-widget-results-demo #fbopen-widget-results {
+  border: 0;
+  padding: 0;
+}
+
 #widget-textarea {
   width: 100%;
   height: 300px;
@@ -30,7 +34,7 @@
 }
 
 
-#widget { margin: 1.0em;}
+#widget-code { margin: 1.0em;}
 #fbopen-widget-results small { color: #c1c1c1; }
 
 header { position: relative;}
@@ -41,7 +45,7 @@ header { position: relative;}
   color: #c1c1c1;
 }
 .fbopen-widget-wrapper,
-#widget { display: none; }
+#widget-code { display: none; }
 .fbopen-demo .fbopen-widget-wrapper { display: none; }
 
 #intro {
