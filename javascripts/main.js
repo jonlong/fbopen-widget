@@ -17,27 +17,6 @@ $(function() {
 
     $inputs.prop("disabled", true);
 
-    var $widgetCopy = $widget.clone();
-
-    // Remove generated data
-    $widgetCopy.find('script').each(function() {
-      if (!$(this).hasClass('embed')) {
-        $(this).remove();
-      }
-    });
-
-    $widgetCopy.find('link').each(function() {
-      $(this).remove();
-    });
-
-    $widgetCopy.find('#fbopen-widget-entries').html();
-
-    // Insert the scrubbed data
-    $widgetCodeBox.html(escapeHTML($widgetCopy[0].outerHTML));
-
-    // Add syntax highlighting with Prism
-    Prism.highlightElement($widgetCodeBox[0]);
-
     // Initialize the widget
     if (fbopenWidget) {
       var options = fbopenWidget.helpers.queryString.parse(serializedData);
@@ -57,6 +36,8 @@ $(function() {
           $searchText.hide();
           $widget.fadeIn();
         }
+
+        displayEmbedCode($widget, $widgetCodeBox);
       });
     }
 
@@ -68,6 +49,34 @@ $(function() {
   });
 
 });
+
+function displayEmbedCode($widget, $widgetCodeBox) {
+  var $widgetCopy = $widget.clone();
+
+  // Remove generated data
+  $widgetCopy.find('script').each(function() {
+    if (!$(this).hasClass('embed')) {
+      $(this).remove();
+    }
+  });
+
+  $widgetCopy.find('link').each(function() {
+    $(this).remove();
+  });
+
+  var entries = $widgetCopy.find('#fbopen-widget-entries');
+  var placeholder = $widgetCopy.find('#fbopen-widget-placeholder');
+
+  $widgetCopy.find('#fbopen-widget-entries').empty();
+
+  $widgetCopy.removeAttr('style');
+
+  // Insert the scrubbed data
+  $widgetCodeBox.html(escapeHTML($widgetCopy[0].outerHTML));
+
+  // Add syntax highlighting with Prism
+  Prism.highlightElement($widgetCodeBox[0]);
+}
 
 function ctrlA(el) {
   with(el) {
