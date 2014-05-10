@@ -1,24 +1,44 @@
-/* global fbopenWidget */
+/* global fbopenWidget, Prism */
 
 $(function() {
   var $form = $('#fbopen-widget-demo');
   var $inputs = $form.find("input, select, button, textarea");
   var $dataStore = $('#fbopen-widget-data');
   var $widgetCode = $('#widget-code');
+  var $widgetCodeBox = $widgetCode.find('code');
   var $widget = $('#fbopen-widget-placeholder');
   var $searchText = $('#fbopen-widget-results-demo small');
 
   $form.submit(function(e) {
     var serializedData = $form.serialize();
-    var widgetHTML = $widget[0].outerHTML;
 
     // set values for widget snippet
     $dataStore.val(serializedData);
 
     $inputs.prop("disabled", true);
 
-    $('#widget-textarea').val(widgetHTML);
+    var $widgetCopy = $widget.clone();
 
+    // Remove generated data
+    $widgetCopy.find('script').each(function() {
+      if (!$(this).hasClass('embed')) {
+        $(this).remove();
+      }
+    });
+
+    $widgetCopy.find('link').each(function() {
+      $(this).remove();
+    });
+
+    $widgetCopy.find('#fbopen-widget-entries').html();
+
+    // Insert the scrubbed data
+    $widgetCodeBox.html(escapeHTML($widgetCopy[0].outerHTML));
+
+    // Add syntax highlighting with Prism
+    Prism.highlightElement($widgetCodeBox[0]);
+
+    // Initialize the widget
     if (fbopenWidget) {
       var options = fbopenWidget.helpers.queryString.parse(serializedData);
 
@@ -43,7 +63,7 @@ $(function() {
     e.preventDefault();
   });
 
-  $('#widget-textarea').mouseenter(function() {
+  $widgetCodeBox.mouseenter(function() {
     ctrlA($(this));
   });
 
@@ -79,4 +99,8 @@ function ctrlA(el) {
     window.status = 'Selected and copied to clipboard!'
   } else window.status = 'Press ctrl-c to copy the text to the clipboard'
   setTimeout("window.status=''", 3000)
+}
+
+function escapeHTML(html) {
+  return html.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }

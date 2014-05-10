@@ -21,7 +21,19 @@
 #widget-textarea {
   width: 100%;
   height: 300px;
-  margin: 0 0 1.0em 0;
+  height: auto;
+  padding: 0 0 0 1em;
+  overflow: auto;
+  /* Custom Prism sidebar */
+  -webkit-box-shadow: -1px 0px 0px 0px #01ABCA, 0px 0px 0px 1px #dfdfdf;
+  -moz-box-shadow: -1px 0px 0px 0px #01ABCA, 0px 0px 0px 1px #dfdfdf;
+  box-shadow: -1px 0px 0px 0px #01ABCA, 0px 0px 0px 1px #dfdfdf;
+  border-left: 10px solid #01ABCA;
+}
+
+#widget-textarea code {
+  max-height: none;
+  overflow: auto;
 }
 
 #fbopen-widget label {
