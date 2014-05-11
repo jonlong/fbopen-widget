@@ -207,7 +207,7 @@
         err.response = this.responseText;
 
         if (callback instanceof Function) {
-          callback(null);
+          callback(err);
         }
       };
 
@@ -238,7 +238,7 @@
             err.response = this.responseText;
 
             if (callback instanceof Function) {
-              callback(null);
+              callback(err);
             }
           }
         }
